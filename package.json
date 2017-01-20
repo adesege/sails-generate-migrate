@@ -1,0 +1,31 @@
+{
+  "name": "sails-generate-migrate",
+  "version": "0.1.0",
+  "description": "sails generate migrate",
+  "main": "Generator.js",
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HeliosInteractive/sails-generate-migrate"
+  },
+  "keywords": [
+    "migrate",
+    "generator",
+    "sails",
+    "generate",
+    "plugin"
+  ],
+  "author": "Michael Neil <michael.neil@heliosinteractive.com>",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "sailsGenerator": {
+    "type": "migrate",
+    "behavior": "overrides `sails generate migrate`",
+    "sailsVersion": "~0.10.0"
+  }
+}
