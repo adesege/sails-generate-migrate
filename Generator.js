@@ -1,8 +1,13 @@
+'use strict';
+
 /**
  * Module dependencies
  */
 
-var util = require('util');
+const util = require('util');
+const fs = require('fs');
+const path = require('path');
+const DBMigrate = require('db-migrate');
 
 /**
  * sails-generate-migrate
@@ -14,6 +19,18 @@ var util = require('util');
  * @help See http://links.sailsjs.org/docs/generators
  */
 
+function maybeMakeDir(dir, done){
+
+  fs.stat(dir, (err, stat) =>{
+
+    if( !err && stat)
+      return done();
+
+    fs.mkdir(dir, done);
+  });
+}
+
+
 module.exports = {
 
   /**
@@ -24,10 +41,10 @@ module.exports = {
    * scope variables, get extra dependencies, and so on.
    *
    * @param  {Object} scope
-   * @param  {Function} cb    [callback]
+   * @param  {Function} done    [callback]
    */
 
-  before: function (scope, cb) {
+  before: function (scope, done) {
 
     // scope.args are the raw command line arguments.
     //
@@ -35,7 +52,7 @@ module.exports = {
     // $ sails generate migrate user find create update
     // then `scope.args` would be `['user', 'find', 'create', 'update']`
     if (!scope.args[0]) {
-      return cb( new Error('Please provide a name for this migrate.') );
+      return done( new Error('Please provide a name for this migrate.') );
     }
 
     // scope.rootPath is the base path for this generator
@@ -46,26 +63,30 @@ module.exports = {
     // And someone ran this generator from `/Users/dbowie/sailsStuff`,
     // then `/Users/dbowie/sailsStuff/Foobar.md` would be created.
     if (!scope.rootPath) {
-      return cb( INVALID_SCOPE_VARIABLE('rootPath') );
+      return done( INVALID_SCOPE_VARIABLE('rootPath') );
     }
 
+    maybeMakeDir(path.join(scope.rootPath, 'migrations'), err =>{
 
-    // Attach defaults
-    scope = Object.assign({
-      createdAt: new Date()
-    }, scope);
+      if( err )
+        return done(err);
 
-    // Decide the output filename for use in targets below:
-    scope.filename = scope.args[0];
+      // initialize db migrate as module. Environment and connection strings do not matter here
+      var migrate = DBMigrate.getInstance(true, {env: 'dev',config:{
+        ['dev'] : {}
+      }});
 
-    // Add other stuff to the scope for use in our templates:
-    scope.whatIsThis = 'an example file created at '+scope.createdAt;
+      migrate.internals.argv._ = migrate.internals.argv._.slice(2);
 
-    console.log('scope', scope);
-    // When finished, we trigger a callback with no error
-    // to begin generating files/folders as specified by
-    // the `targets` below.
-    cb();
+      //console.log('args', process.argv, scope.args);
+      migrate.create(scope.args[0], function(){
+        //console.log('done', arguments.length);
+        //console.log('arguments', Array.prototype.slice.call(arguments))
+        return done();
+      });
+
+    })
+
   },
 
 
@@ -75,7 +96,7 @@ module.exports = {
    * @type {Object}
    */
 
-  targets: {
+  /*targets: {
 
     // Usage:
     // './path/to/destination.foo': { someHelper: opts }
@@ -86,12 +107,12 @@ module.exports = {
     // The `template` helper reads the specified template, making the
     // entire scope available to it (uses underscore/JST/ejs syntax).
     // Then the file is copied into the specified destination (on the left).
-    './:filename': { template: 'example.template.js' },
+    './filename': { template: 'example.template.js' },
 
     // Creates a folder at a static path
-    './hey_look_a_folder': { folder: {} }
+    './migrations': { folder: {} }
 
-  },
+  },*/
 
 
   /**
@@ -100,7 +121,7 @@ module.exports = {
    *
    * @type {String}
    */
-  templatesDirectory: require('path').resolve(__dirname, './templates')
+  //templatesDirectory: require('path').resolve(__dirname, './templates')
 };
 
 
