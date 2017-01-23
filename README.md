@@ -6,7 +6,7 @@ Create new migrations for db-migrate to run when lifting sails. This package is 
 
 ## Dependencies (optional)
 
-**Highly recommended** to use with `sails-hook-migrate` to create migration scripts from the command line.
+You may use with `sails-hook-migrate` to automatically run migrations when running `sails lift`
 
 ```sh
 npm i -S sails-hook-migrate`
@@ -15,20 +15,51 @@ npm i -S sails-hook-migrate`
 ## Installation
 
 ```sh
-npm i -S sails-generate-migrate sails-hook-migrate
+npm i -S sails-generate-migrate
 ```
-
-Create a new `migrations` folder in the root of your project.
 
 ### Usage
 
-##### On the command line
+##### Create a new migration script
+
+Generates a new migration for the specified {model} in a newly created `migrations` folder at the base of your project.
+
+Edit the generated file(s) to add your migration steps in accordance
+with [db-migrate usage](https://db-migrate.readthedocs.io/en/latest/Getting%20Started/usage/).
 
 ```sh
-$ sails generate migrate {model}
+$ sails generate migrate create {model}
 ```
 
-Generates a new migration for the specified {model} in `migrations`.
+**options**
 
-Edit the generated file to add your migration steps in accordance
-with [db-migrate usage](https://db-migrate.readthedocs.io/en/latest/Getting%20Started/usage/)
+ - --coffee-file
+   - Outputs the migration as coffee script
+ - --sql-file
+   - Outputs the migration as sql
+
+##### Run a migration up
+
+Runs your migrations scripts against the default environment for your project.
+
+```sh
+$ sails generate migrate up
+```
+
+**options**
+
+ - -c {n}
+   - run the next n migrations up
+
+##### Run a migration down
+
+Runs the down migration from the last migration script available.
+
+```sh
+$ sails generate migrate down
+```
+
+**options**
+
+ - -c {n}
+   - reverse the last n migrations

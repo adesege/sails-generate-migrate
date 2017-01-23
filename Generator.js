@@ -8,6 +8,19 @@ const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const DBMigrate = require('db-migrate');
+const Sails = require('sails').Sails;
+const commands = [
+  'up',
+  'down',
+  'create'
+];
+const adapters = [
+  {driver: 'sqlite3', regex: /sqlite/i},
+  {driver: 'mysql', regex: /mysql/i},
+  {driver: 'pg', regex: /postgre|pg/i},
+  {driver: 'mongodb', regex: /mongo/i},
+];
+
 
 /**
  * sails-generate-migrate
@@ -30,104 +43,6 @@ function maybeMakeDir(dir, done){
   });
 }
 
-
-module.exports = {
-
-  /**
-   * `before()` is run before executing any of the `targets`
-   * defined below.
-   *
-   * This is where we can validate user input, configure default
-   * scope variables, get extra dependencies, and so on.
-   *
-   * @param  {Object} scope
-   * @param  {Function} done    [callback]
-   */
-
-  before: function (scope, done) {
-
-    // scope.args are the raw command line arguments.
-    //
-    // e.g. if someone runs:
-    // $ sails generate migrate user find create update
-    // then `scope.args` would be `['user', 'find', 'create', 'update']`
-    if (!scope.args[0]) {
-      return done( new Error('Please provide a name for this migrate.') );
-    }
-
-    // scope.rootPath is the base path for this generator
-    //
-    // e.g. if this generator specified the target:
-    // './Foobar.md': { copy: 'Foobar.md' }
-    //
-    // And someone ran this generator from `/Users/dbowie/sailsStuff`,
-    // then `/Users/dbowie/sailsStuff/Foobar.md` would be created.
-    if (!scope.rootPath) {
-      return done( INVALID_SCOPE_VARIABLE('rootPath') );
-    }
-
-    maybeMakeDir(path.join(scope.rootPath, 'migrations'), err =>{
-
-      if( err )
-        return done(err);
-
-      // initialize db migrate as module. Environment and connection strings do not matter here
-      var migrate = DBMigrate.getInstance(true, {env: 'dev',config:{
-        ['dev'] : {}
-      }});
-
-      migrate.internals.argv._ = migrate.internals.argv._.slice(2);
-
-      //console.log('args', process.argv, scope.args);
-      migrate.create(scope.args[0], function(){
-        //console.log('done', arguments.length);
-        //console.log('arguments', Array.prototype.slice.call(arguments))
-        return done();
-      });
-
-    })
-
-  },
-
-
-
-  /**
-   * The files/folders to generate.
-   * @type {Object}
-   */
-
-  /*targets: {
-
-    // Usage:
-    // './path/to/destination.foo': { someHelper: opts }
-
-    // Creates a dynamically-named file relative to `scope.rootPath`
-    // (defined by the `filename` scope variable).
-    //
-    // The `template` helper reads the specified template, making the
-    // entire scope available to it (uses underscore/JST/ejs syntax).
-    // Then the file is copied into the specified destination (on the left).
-    './filename': { template: 'example.template.js' },
-
-    // Creates a folder at a static path
-    './migrations': { folder: {} }
-
-  },*/
-
-
-  /**
-   * The absolute path to the `templates` for this generator
-   * (for use with the `template` helper)
-   *
-   * @type {String}
-   */
-  //templatesDirectory: require('path').resolve(__dirname, './templates')
-};
-
-
-
-
-
 /**
  * INVALID_SCOPE_VARIABLE()
  *
@@ -144,13 +59,139 @@ module.exports = {
 
 function INVALID_SCOPE_VARIABLE (varname, details, message) {
   var DEFAULT_MESSAGE =
-  'Issue encountered in generator "migrate":\n'+
-  'Missing required scope variable: `%s`"\n' +
-  'If you are the author of `sails-generate-migrate`, please resolve this '+
-  'issue and publish a new patch release.';
+    'Issue encountered in generator "migrate":\n'+
+    'Missing required scope variable: `%s`"\n' +
+    'If you are the author of `sails-generate-migrate`, please resolve this '+
+    'issue and publish a new patch release.';
 
   message = (message || DEFAULT_MESSAGE) + (details ? '\n'+details : '');
   message = util.inspect(message, varname);
 
   return new Error(message);
 }
+
+function getMigrateInstance(config){
+
+  if( !config ){
+    var migrate = DBMigrate.getInstance(true, {env: 'dev',config:{
+      ['dev'] : {}
+    }});
+    migrate.internals.argv._ = migrate.internals.argv._.slice(3);
+    return migrate;
+  }
+
+  var connection;
+  try{
+    connection = config.connections[config.models.connection];
+  }catch(e){}
+
+  if( !connection || !connection.adapter){
+    sails.log.warn('Connection not supported or missing adapter');
+    return done();
+  }
+
+  let driver = adapters.filter(adapter => adapter.regex.test(connection.adapter))
+    .reduce((o, n) => n.driver || o, false);
+
+  if( !driver ){
+    sails.log.warn('adapter %s not supported for sails-hook-migrate', connection.adapter);
+    return done();
+  }
+
+  var migrate = DBMigrate.getInstance(true, {
+    config: {
+      [process.env.NODE_ENV]: Object.assign({
+        driver: driver,
+      }, connection)
+    }
+  });
+  migrate.internals.argv._ = migrate.internals.argv._.slice(3);
+  return migrate;
+}
+
+var Migrator = {
+
+  /**
+   * `before()` is run before executing any of the `targets`
+   * defined below.
+   *
+   * This is where we can validate user input, configure default
+   * scope variables, get extra dependencies, and so on.
+   *
+   * @param  {Object} scope
+   * @param  {Function} done    [callback]
+   */
+
+  before: function (scope, done) {
+
+    if (!scope.args[0])
+      return done( new Error('Please provide a task') );
+
+    //if (!scope.args[1])
+      //return done( new Error('Please provide a name for this migrate.') );
+
+    if (!scope.rootPath)
+      return done( INVALID_SCOPE_VARIABLE('rootPath') );
+
+    maybeMakeDir(path.join(scope.rootPath, 'migrations'), err =>{
+
+      if( err )
+        return done(err);
+
+      // initialize db migrate as module. Environment and connection strings do not matter here
+      var migrate = getMigrateInstance();
+      let command = scope.args.slice(0, 1)[0].split(':')[0];
+
+      if( command === 'create' )
+        return Migrator[command].call(migrate, scope.args, done);
+
+      Sails().lift({
+        hooks: {
+          grunt: false,
+          blueprints: false,
+          cors: false,
+          csrf: false,
+          http: false,
+          i18n: false,
+          request: false,
+          responses: false,
+          policies: false,
+          routes: false,
+          session: false,
+          sockets: false,
+          views: false,
+          pubsub: false
+        },
+        log: {level: "error"}
+      },function (err, _sails) {
+
+        if (err) return done(err);
+
+        var migrate = getMigrateInstance(_sails.config);
+        Migrator[command].call(migrate, scope.args, done);
+
+      });
+
+    });
+
+  },
+
+  up: function(argv, done){
+
+    this.up(done);
+  },
+
+  down: function(argv, done){
+
+    this.down(done);
+  },
+
+  create: function(argv, done){
+
+    let model = argv[1];
+    this.create(model, done);
+  },
+
+};
+
+module.exports = Migrator;
