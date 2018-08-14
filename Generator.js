@@ -82,11 +82,11 @@ function getMigrateInstance(config){
 
   var connection;
   try{
-    connection = config.connections[config.models.connection];
+    connection = config.datastores[config.models.connection];
   }catch(e){}
 
   if( !connection || !connection.adapter){
-    sails.log.warn('Connection not supported or missing adapter');
+    Sails.log.warn('Connection not supported or missing adapter');
     return done();
   }
 
@@ -94,7 +94,7 @@ function getMigrateInstance(config){
     .reduce((o, n) => n.driver || o, false);
 
   if( !driver ){
-    sails.log.warn('adapter %s not supported for sails-hook-migrate', connection.adapter);
+    Sails.log.warn('adapter %s not supported for sails-hook-migrate', connection.adapter);
     return done();
   }
 
@@ -142,35 +142,11 @@ var Migrator = {
       var migrate = getMigrateInstance();
       let command = scope.args.slice(0, 1)[0].split(':')[0];
 
-      if( command === 'create' )
+      if( command === 'create' ) {
         return Migrator[command].call(migrate, scope.args, done);
-
-      Sails().lift({
-        hooks: {
-          grunt: false,
-          blueprints: false,
-          cors: false,
-          csrf: false,
-          http: false,
-          i18n: false,
-          request: false,
-          responses: false,
-          policies: false,
-          routes: false,
-          session: false,
-          sockets: false,
-          views: false,
-          pubsub: false
-        },
-        log: {level: "error"}
-      },function (err, _sails) {
-
-        if (err) return done(err);
-
-        var migrate = getMigrateInstance(_sails.config);
-        Migrator[command].call(migrate, scope.args, done);
-
-      });
+      }
+      var migrate = getMigrateInstance(Sails.config);
+      Migrator[command].call(migrate, scope.args, done);
 
     });
 

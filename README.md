@@ -1,3 +1,8 @@
+# What's new?
+`sails-generate-migrate` is a fork of [https://github.com/HeliosInteractive/sails-generate-migrate](HeliosInteractive/sails-generate-migrate). 
+
+This version upgrades Sailsjs from v0.10.0 to >= v1.
+
 # Sails Generate Migrate
 
 A `migrate` generator for use with the Sails command-line interface.
@@ -15,7 +20,7 @@ npm i -S sails-hook-migrate`
 ## Installation
 
 ```sh
-npm i -S sails-generate-migrate
+npm i -S https://github.com/adesege/sails-generate-migrate
 ```
 
 ### Usage
