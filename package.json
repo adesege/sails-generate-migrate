@@ -1,6 +1,6 @@
 {
   "name": "sails-generate-migrate",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "sails generate migrate",
   "main": "Generator.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/HeliosInteractive/sails-generate-migrate"
+    "url": "https://github.com/adesege/sails-generate-migrate"
   },
   "keywords": [
     "migrate",
@@ -17,14 +17,14 @@
     "generate",
     "plugin"
   ],
-  "author": "Michael Neil <michael.neil@heliosinteractive.com>",
+  "author": "Temitayo Fadojutimi <fadojutimitemitayo@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "db-migrate": "0.10.0-beta.20",
-    "db-migrate-mongodb": "1.2.1",
+    "db-migrate": "^0.11.1",
+    "db-migrate-mongodb": "^1.4.0",
     "db-migrate-mysql": "1.1.10",
-    "db-migrate-pg": "0.1.11",
-    "sails": "~0.10.0"
+    "db-migrate-pg": "^0.4.0",
+    "sails": "^1.0.2"
   },
   "devDependencies": {},
   "sailsGenerator": {
